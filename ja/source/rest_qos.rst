@@ -1743,9 +1743,9 @@ QoSルールの追加
                --**switch**: [ "all" \| *スイッチID* ]
 
                --**vlan**: [ "all" \| *VLAN ID* ]
-**データ**     **match**:
-                 **priority**:[ 0 - 65535 ]
+**データ**     **priority**:[ 0 - 65535 ]
 
+               **match**:
                  **in_port**:[ 0 - 65535 ]
 
                  **dl_src**:"<xx:xx:xx:xx:xx:xx>"
