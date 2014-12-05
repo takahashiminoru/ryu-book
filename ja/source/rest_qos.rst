@@ -1743,27 +1743,28 @@ QoSルールの追加
                --**switch**: [ "all" \| *スイッチID* ]
 
                --**vlan**: [ "all" \| *VLAN ID* ]
-**データ**     **priority**:[ 0 - 65535 ]
+**データ**     **match**:
+                 **priority**:[ 0 - 65535 ]
 
-               **in_port**:[ 0 - 65535 ]
+                 **in_port**:[ 0 - 65535 ]
 
-               **dl_src**:"<xx:xx:xx:xx:xx:xx>"
+                 **dl_src**:"<xx:xx:xx:xx:xx:xx>"
 
-               **dl_dst**:"<xx:xx:xx:xx:xx:xx>"
+                 **dl_dst**:"<xx:xx:xx:xx:xx:xx>"
 
-               **dl_type**:[ "ARP" \| "IPv4" ]
+                 **dl_type**:[ "ARP" \| "IPv4" ]
 
-               **nw_src**:"<xxx.xxx.xxx.xxx/xx>"
+                 **nw_src**:"<xxx.xxx.xxx.xxx/xx>"
 
-               **nw_dst**:"<xxx.xxx.xxx.xxx/xx">
+                 **nw_dst**:"<xxx.xxx.xxx.xxx/xx">
 
-               **nw_proto**":[ "TCP" \| "UDP" \| "ICMP" ]
+                 **nw_proto**":[ "TCP" \| "UDP" \| "ICMP" ]
 
-               **tp_src**:[ 0 - 65535 ]
+                 **tp_src**:[ 0 - 65535 ]
 
-               **tp_dst**:[ 0 - 65535 ]
+                 **tp_dst**:[ 0 - 65535 ]
 
-               **ip_dscp**:[ 0 - 63 ]
+                 **ip_dscp**:[ 0 - 63 ]
 
                **actions**:
                  [ "mark": [ 0 - 63  ] \|
