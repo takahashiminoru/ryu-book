@@ -291,7 +291,7 @@ h2(client) sends 1Mbps UDP traffic to the port 5001 on h1 and
 
 .. NOTE::
 
-    the fallowing examples use iperf (http://iperf.fr/) to measure the
+    The fallowing examples use iperf (http://iperf.fr/) to measure the
     bandwidth.
     But this document does not describe how to install iperf and how to use it.
 
@@ -457,7 +457,7 @@ mac          None       Set the MAC address of the host automatically
 switch       ovsk       Use Open vSwitch
 controller   remote     Use an external one for OpenFlow controller
 x            None       Start xterm
-============ ========== =============================================
+============ ========== ==================================================
 
 An execution example is as follows.
 
@@ -668,7 +668,7 @@ Also, execute setting of Queue.
     The result of the REST command is formatted for easy viewing.
 
 Router Setting
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^
 
 Set the IP address and the default route for each router.
 
@@ -1068,24 +1068,30 @@ In this way, we were able to confirm that it is possible to realize a QoS by
 using DiffServ model.
 
 
-Meter Tableを使用したQoSの動作例
---------------------------------
+Example of the operation of QoS by using Meter Table
+----------------------------------------------------
 
-OpenFlow 1.3よりMeter Tableが導入されOpenFlowでトラフィックのポリシングが可能となりました。Meter Tableの利用例について紹介します。
-こちらの例では、Meter TableをサポートするOpenFlow Switchのofsoftswitch13(https://github.com/CPqD/ofsoftswitch13)を使用します。
+Meter Table is introduced in the OpenFlow 1.3, makes it enable to use policing of traffic in OpenFlow mechanism.
+This chapter describes example of the use of Meter Table. This example uses the OpenFlow Switch ofsoftswitch13(https://github.com/CPqD/ofsoftswitch13).
+This switch supports Meter Table.
 
 .. NOTE::
 
-    ofsoftswitch13のインストール手順などについては本稿では解説しません。
-    参考:
-    (https://github.com/CPqD/ofsoftswitch13/wiki/OpenFlow-1.3-Tutorial)
+    This section does not describe the installation instructions for ofsoftswitch13.
+
+    Reference: https://github.com/CPqD/ofsoftswitch13/wiki/OpenFlow-1.3-Tutorial
 
 
-以下のように複数のDiffServドメイン(DSドメイン)により構成されているネットワークを想定します。
-DSドメインの境界に位置するルータ(エッジルータ)によってメータリングが行われ、指定帯域を超えるトラフィックは再マーキングされます。
-通常再マーキングされたパケットは優先的に破棄されるか、優先順位の低いクラスとして扱われます。
-例では、AF1クラスに対して800Kbpsの帯域保証を行い、各DSドメインから流入するAF11のトラフィックの400Kbpsを契約帯域とし、それ以上は超過トラフィックとしてパケットはAF12に再マーキングされます。
-ただし、AF12はベストエフォートのトラフィックよりは保証されるように設定しています。従って、各DSドメインからの高優先度のトラフィックに対しては400Kbpsまでは公平に保証され、最大約500Kbpsの帯域保証を実現できます。
+The following shows an example of the network composed of the multiple DiffServ domain (DS domain).
+Traffic metering are executed by the router (edge router) located on the boundary of the DS domain,
+And the traffic that exceeds the specified bandwidth will be re-marking.
+Usually, re-marked packets are dropped preferentially or treated as low priority class.
+In this example, perform the bandwidth guarantee of 800Kbps to AF1 class.
+Also, AF11 class traffic transferred from each DS domain is guaranteed with  400Kbps bandwidth.
+Traffic that is more than 400kbps is treated as excess traffic, and re-marked with AF12 class.
+However, it is still guaranteed that AF12 class is more preferentially transferred than the best effort class.
+As a result, to 400Kbps for high priority traffic to be transferred from each DS domain is
+Equitably guaranteed bandwidth, and is guaranteed bandwidth of up to about 500Kbps.
 
 .. only:: latex
 
@@ -1106,13 +1112,13 @@ DSドメインの境界に位置するルータ(エッジルータ)によって�
 
 
 
-環境構築
-^^^^^^^^
+Building the environment
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-まずはMininet上に環境を構築します。
-トポロジの作成はPythonスクリプトで行います。
+First, build an environment on Mininet.
+Build a topology using a python script.
 
-ソース名： ``qos_sample_topology.py``
+source code: ``qos_sample_topology.py``
 
 .. rst-class:: sourcecode
 
@@ -1120,9 +1126,9 @@ DSドメインの境界に位置するルータ(エッジルータ)によって�
 
 .. NOTE::
 
-    あらかじめofsoftswitch13のリンクスピードを1Mbpsに変更しています。
+    Change the link speed of ofsoftswitch13 to 1Mbps in advance.
 
-実行例は以下の通りになります
+An execution example is as follows.
 
 .. rst-class:: console
 
@@ -1132,7 +1138,7 @@ DSドメインの境界に位置するルータ(エッジルータ)によって�
     Unable to contact the remote controller at 127.0.0.1:6633
     mininet>
 
-また、コントローラ用のxtermを2つ起動しておきます。
+Also, start two xterm for the controller.
 
 .. rst-class:: console
 
@@ -1143,7 +1149,8 @@ DSドメインの境界に位置するルータ(エッジルータ)によって�
     mininet>
 
 
-続いて、「:ref:`ch_switching_hub`」で使用したsimple_switch_13.pyを変更します。rest_qos.pyはフローテーブルのパイプライン上で処理される事を想定しているため、simple_switch_13.pyのフローエントリをtable id:1に登録するように変更します。
+Next, modify the simple_switch_13.py used in ":: ref` ch_switching_hub` ".
+rest_qos.py suppose to be processed on Flow Table pipeline processing,modify simple_switch_13.py to register flow entry into table id:1.
 
 controller: c0 (root)
 
@@ -1154,7 +1161,7 @@ controller: c0 (root)
     root@ryu-vm:~# sed '/OFPFlowMod(/,/)/s/)/, table_id=1)/' ryu/ryu/app/simple_switch_13.py > ryu/ryu/app/qos_simple_switch_13.py
     root@ryu-vm:~# cd ryu/; python ./setup.py install
 
-最後に、コントローラのxterm上でrest_qos、qos_simple_switch_13を起動させます。
+Finally, start rest_qos and qos_simple_switch_13 on xterm of controller.
 
 controller: c0 (root):
 
@@ -1178,7 +1185,7 @@ controller: c0 (root):
     instantiating app ryu.app.rest_qos of RestQoSAPI
     (2348) wsgi starting up on http://0.0.0.0:8080/
 
-Ryuとスイッチの間の接続に成功すると、次のメッセージが表示されます。
+After a successful connection between the switch and Ryu, the following message appears.
 
 controller: c0 (root):
 
@@ -1192,18 +1199,18 @@ controller: c0 (root):
     ...
 
 
-QoSの設定
-^^^^^^^^^
+Setting QoS
+^^^^^^^^^^^
 
-以下の通りスイッチ(s1)にDSCP値に応じた制御を行うフローを設定します。
+Install the following flow entry in accordance with DSCP value into the router (s1).
 
-========= ============ ============ ===========
-(優先度)  DSCP         キューID     (QoS ID)
-========= ============ ============ ===========
-1         0 (BE)       1            1
-1         12(AF12)     2            2
-1         10(AF11)     3            3
-========= ============ ============ ===========
+========== ============ ============ ===========
+(Priority)  DSCP         Queue ID     (QoS ID)
+========== ============ ============ ===========
+1          0 (BE)       1            1
+1          12(AF12)     2            2
+1          10(AF11)     3            3
+========== ============ ============ ===========
 
 Node: c0 (root):
 
@@ -1289,16 +1296,16 @@ Node: c0 (root):
         }
       ]
 
-以下の通りスイッチ(s2、s3)にメータエントリーを設定します。
+Install the following meter entries to the switches (s2, s3).
 
-========= ============ ============ ===========
-(優先度)  DSCP         メータID     (QoS ID)
-========= ============ ============ ===========
-1         10(AF11)     1            1
-========= ============ ============ ===========
+==== ===== ============ ============ ===========
+(Priority)  DSCP         Meter ID     (QoS ID)
+========== ============ ============ ===========
+1          10(AF11)     1            1
+========== ============ ============ ===========
 
 ========= ======= ==================
-メータID  Flags   Bands
+Meter ID  Flags   Bands
 ========= ======= ==================
 1         KBPS    type:DSCP_REMARK,
                   burst_size:100,
@@ -1362,10 +1369,10 @@ Node: c0 (root):
         }
       ]
 
-設定内容の確認
-^^^^^^^^^^^^^^
+Verifying the Setting
+^^^^^^^^^^^^^^^^^^^^^
 
-各スイッチに設定された内容を確認します。
+Check the contents of the setting of each switch.
 
 Node: c0 (root):
 
@@ -1504,11 +1511,11 @@ Node: c0 (root):
         }
       ]
 
-この状態で、iperfで帯域計測をしてみます。
-h1はサーバとなりプロトコルはUDPで5001ポートと5002ポートと5003ポートで待ち受けます。
-h2、h3はクライアントとなりh1宛に各クラスのトラフィックを送出します。
+Try to measure the bandwidth by using iperf.
+h1(server) is listening on port 5001 and 5002 and port 5003 in the UDP protocol.
+h2, h3 (client) sends the traffic of each class addressed to h1.
 
-まず、h1とh2で2つとh3の1つづつターミナルを起動します。
+First, start 4 xterm as follows.
 
 .. rst-class:: console
 
@@ -1531,7 +1538,7 @@ Node: h1(1) (root):
     root@ryu-vm:~# iperf -s -u -p 5003 &
     ...
 
-* ベストエフォートと超過したAF11トラフィック
+* Best-effort traffic and Excess AF11 traffic
 
 .. rst-class:: console
 
@@ -1568,10 +1575,10 @@ Node: h1(1) (root):
     [  4]  0.0-10.0 sec   735 KBytes   600 Kbits/sec   7.497 ms    6/  512 (1.2%)
     [  4]  0.0-10.0 sec  6 datagrams received out-of-order
 
-AF11のトラフィックが契約帯域400Kbpsを超過した場合でもベストエフォートのトラフィックより
-帯域が保証されている事が分かります。
+The above result shows, even if the traffic of AF11 exceeds the contracted bandwidth 400Kbps,
+AF11 is more preferentially guaranteed bandwidth than traffic of best effort.
 
-* ベストエフォートとAF11の契約帯域内トラフィックと超過トラフィック
+* Best effort traffic & AF11 non-excess traffic & AF11 excess traffic
 
 .. rst-class:: console
 
@@ -1626,9 +1633,9 @@ AF11のトラフィックが契約帯域400Kbpsを超過した場合でもベス
     [  4]  0.0-10.0 sec   666 KBytes   544 Kbits/sec  500.361 ms   48/  512 (9.4%)
     [  4]  0.0-10.0 sec  192 datagrams received out-of-order
 
-400Kbpsの契約帯域内のトラフィックはドロップされていない事がわかります。
+The above result shows, traffic within the contracted bandwidth of 400Kbps are not dropped.
 
-* AF11の超過トラフィック、超過トラフィック
+* AF11 excess traffic & AF11 excess traffic
 
 .. rst-class:: console
 
@@ -1666,175 +1673,178 @@ AF11のトラフィックが契約帯域400Kbpsを超過した場合でもベス
     [  4]  0.0-10.6 sec   665 KBytes   515 Kbits/sec  897.126 ms   49/  512 (9.6%)
     [  4]  0.0-10.6 sec  93 datagrams received out-of-order
 
-超過トラフィックは同程度にドロップされている事が分かります。
+The above result shows, two excess traffic are droped in the same rate.
 
-本章では、具体例を挙げながらQoS REST APIの使用方法を説明しました。
-
-
-REST API一覧
-------------
-
-本章で紹介したrest_qosのREST API一覧です。
+In this section, you learned how to use the QoS REST API with specific examples.
 
 
-キューの状態の取得
+REST API List
+------------------
+
+A list of REST API of rest_qos introduced in this section.
+
+
+Get queue status
 ^^^^^^^^^^^^^^^^^^
 
 =============  ========================
-**メソッド**   GET
+**Method**     GET
 **URL**        /qos/queue/status/{**switch**}
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
 =============  ========================
 
-キューの設定情報の取得
-^^^^^^^^^^^^^^^^^^^^^^
+Get queue configuration
+^^^^^^^^^^^^^^^^^^^^^^^
 
 =============  ========================
-**メソッド**   GET
+**Method**     GET
 **URL**        /qos/queue/{**switch**}
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
-**備考**       QoS REST APIを起動した後有効にしたキューの設定情報のみ取得できます。
+**Remarks**       It is possible to get only queue configuration after start of the QoS REST API.
 =============  ========================
 
-キューの設定
+Set queue
 ^^^^^^^^^^^^
 
 =============  ========================
-**メソッド**   POST
+**Method**     POST
 **URL**        /qos/queue/{**switch**}
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
-**データ**     **port_name**:[設定対象のポート名]
+**Data**       **port_name**:[Port name]
 
                **type**:[linux-htb \| linux-hfsc]
 
-               **max_rate**:[帯域幅(bps)]
+               **max_rate**:[Bandwidth(bps)]
 
                **queues**:
 
-                 **max_rate**:[帯域幅(bps)]
+                 **max_rate**:[Bandwidth(bps)]
 
-                 **min_rate**:[帯域幅(bps)]
+                 **min_rate**:[Bandwidth(bps)]
 
-**備考**       既存の設定が存在する場合は上書きされます。
+**Remarks**    If an action of the given type exists in the current set,
+               overwrite it.
 
-               OpenvSwitchにのみ設定が可能です。
+               This command is compatible with only Open vSwitch.
 
-               port_nameパラメータはオプションです。
+               port_name on Data is optional.
 
-               port_nameを指定しない場合は全てのポートに設定されます。
+               If you do not specify a port_name, it is set to OFPP_ANY.
 =============  ========================
 
-キューの削除
+Delete queue
 ^^^^^^^^^^^^
 
 =============  ================================================
-**メソッド**   DELETE
+**Method**     DELETE
 **URL**        /qos/queue/{**swtich-id**}
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
-**備考**       OVSDBのQoSレコードとの関連を削除します。
+**Remarks**    Remove the association with QoS record of OVSDB
 =============  ================================================
 
 
-全QoSルールの取得
-^^^^^^^^^^^^^^^^^
+Get all of QoS rules
+^^^^^^^^^^^^^^^^^^^^
 
 =============  ==========================================
-**メソッド**   GET
+**Method**     GET
 **URL**        /qos/rules/{**switch**}[/{**vlan**}]
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
                --**vlan**: [ "all" \| *VLAN ID* ]
-**備考**        VLAN IDの指定はオプションです。
+**Remarks**        VLAN ID on URL is optional.
 =============  ==========================================
 
 
-QoSルールの追加
+Set a QoS rule
 ^^^^^^^^^^^^^^^
 
 =============  =========================================================
-**メソッド**   POST
+**Method**     POST
 **URL**        /qos/rules/{**switch**}[/{**vlan**}]
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
                --**vlan**: [ "all" \| *VLAN ID* ]
-**データ**     **priority**:[ 0 - 65535 ]
+**Data**       **priority**:[ 0 - 65535 ]
 
-               **in_port**:[ 0 - 65535 ]
+               **match**:
 
-               **dl_src**:"<xx:xx:xx:xx:xx:xx>"
+                 **in_port**:[ 0 - 65535 ]
 
-               **dl_dst**:"<xx:xx:xx:xx:xx:xx>"
+                 **dl_src**:"<xx:xx:xx:xx:xx:xx>"
 
-               **dl_type**:[ "ARP" \| "IPv4" ]
+                 **dl_dst**:"<xx:xx:xx:xx:xx:xx>"
 
-               **nw_src**:"<xxx.xxx.xxx.xxx/xx>"
+                 **dl_type**:[ "ARP" \| "IPv4" ]
 
-               **nw_dst**:"<xxx.xxx.xxx.xxx/xx">
+                 **nw_src**:"<xxx.xxx.xxx.xxx/xx>"
 
-               **nw_proto**":[ "TCP" \| "UDP" \| "ICMP" ]
+                 **nw_dst**:"<xxx.xxx.xxx.xxx/xx>"
 
-               **tp_src**:[ 0 - 65535 ]
+                 **nw_proto**":[ "TCP" \| "UDP" \| "ICMP" ]
 
-               **tp_dst**:[ 0 - 65535 ]
+                 **tp_src**:[ 0 - 65535 ]
 
-               **ip_dscp**:[ 0 - 63 ]
+                 **tp_dst**:[ 0 - 65535 ]
+
+                 **ip_dscp**:[ 0 - 63 ]
 
                **actions**:
                  [ "mark": [ 0 - 63  ] \|
-                 [ "meter": [ メーターID ] \|
-                 [ "queue": [ キューID ]
+                 [ "meter": [ Meter ID ] \|
+                 [ "queue": [ Queue ID ]
 
-**備考**       登録に成功するとQoS IDが生成され、応答に記載されます。
+**Remarks**       If successful registration, QoS ID is generated, it will be described in the response.
 
-               VLAN IDの指定はオプションです。
+               VLAN ID on URL is optional.
 =============  =========================================================
 
 
-QoSルールの削除
-^^^^^^^^^^^^^^^
+Delete qos rules
+^^^^^^^^^^^^^^^^
 
 =============  ==========================================
-**メソッド**   DELETE
+**Method**     DELETE
 **URL**        /qos/rules/{**switch**}[/{**vlan**}]
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
                --**vlan**: [ "all" \| *VLAN ID* ]
-**データ**     **rule_id**:[ "all" \| 1 - ... ]
-**備考**        VLAN IDの指定はオプションです。
+**Data**       **rule_id**:[ "all" \| 1 - ... ]
+**Remarks**        VLAN ID on URL is optional.
 =============  ==========================================
 
 
-メーターテーブルの情報取得
+Get Meter Statistics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 =============  ====================
-**メソッド**   GET
+**Method**     GET
 **URL**        /qos/meter/{**switch**}
 
-               --**switch**: [ "all" \| *スイッチID* ]
+               --**switch**: [ "all" \| *Switch ID* ]
 
 =============  ====================
 
 
-メーターテーブルの設定
+Set meter table
 ^^^^^^^^^^^^^^^^^^^^^^
 
 =============  ===============================================
-**メソッド**   POST
+**Method**     POST
 **URL**        /qos/meter/{**switch**}
 
-**データ**     **meter_id**:メータID
+**Data**       **meter_id**:Meter ID
 
                **bands**:
 
@@ -1842,11 +1852,11 @@ QoSルールの削除
 
                  **flags**:[KBPS \| PKTPS \| BURST \| STATS]
 
-                 **burst_size**:[バーストサイズ]
+                 **burst_size**:[Burst size]
 
-                 **rate**:[受信レート]
+                 **rate**:[Reception rate]
 
-                 **prec_level**:[リマークする破棄優先度レベル]
+                 **prec_level**:[ Number of drop precedence level to add ]
 
-**備考**       bandsで指定する、また有効になるパラメータはactionやflagsによって異なります。
+**Remarks**       The parameter specified or enabled in the bands is depends on the action and flags.
 =============  ===============================================
