@@ -1084,14 +1084,14 @@ This switch supports Meter Table.
 
 The following shows an example of the network composed of the multiple DiffServ domain (DS domain).
 Traffic metering are executed by the router (edge router) located on the boundary of the DS domain,
-And the traffic that exceeds the specified bandwidth will be re-marking.
+and the traffic that exceeds the specified bandwidth will be re-marking.
 Usually, re-marked packets are dropped preferentially or treated as low priority class.
 In this example, perform the bandwidth guarantee of 800Kbps to AF1 class.
 Also, AF11 class traffic transferred from each DS domain is guaranteed with  400Kbps bandwidth.
 Traffic that is more than 400kbps is treated as excess traffic, and re-marked with AF12 class.
 However, it is still guaranteed that AF12 class is more preferentially transferred than the best effort class.
-As a result, to 400Kbps for high priority traffic to be transferred from each DS domain is
-Equitably guaranteed bandwidth, and is guaranteed bandwidth of up to about 500Kbps.
+As a result, traffic from each DS domain is equally guaranteed a high priority until
+bandwidth 400Kbps and is guaranteed bandwidth about 500Kbps as limit.
 
 .. only:: latex
 
@@ -1149,7 +1149,7 @@ Also, start two xterm for the controller.
     mininet>
 
 
-Next, modify the simple_switch_13.py used in ":: ref` ch_switching_hub` ".
+Next, modify the simple_switch_13.py used in ":ref:`ch_switching_hub`".
 rest_qos.py suppose to be processed on Flow Table pipeline processing,modify simple_switch_13.py to register flow entry into table id:1.
 
 controller: c0 (root)
@@ -1538,7 +1538,7 @@ Node: h1(1) (root):
     root@ryu-vm:~# iperf -s -u -p 5003 &
     ...
 
-* Best-effort traffic and Excess AF11 traffic
+* Best-effort traffic & AF11 excess traffic
 
 .. rst-class:: console
 
@@ -1578,7 +1578,7 @@ Node: h1(1) (root):
 The above result shows, even if the traffic of AF11 exceeds the contracted bandwidth 400Kbps,
 AF11 is more preferentially guaranteed bandwidth than traffic of best effort.
 
-* Best effort traffic & AF11 non-excess traffic & AF11 excess traffic
+* Best-effort traffic & AF11 non-excess traffic & AF11 excess traffic
 
 .. rst-class:: console
 
@@ -1804,7 +1804,7 @@ Set a QoS rule
                  [ "meter": [ Meter ID ] \|
                  [ "queue": [ Queue ID ]
 
-**Remarks**       If successful registration, QoS ID is generated, it will be described in the response.
+**Remarks**    If successful registration, QoS ID is generated, it will be described in the response.
 
                VLAN ID on URL is optional.
 =============  =========================================================
@@ -1856,7 +1856,7 @@ Set meter table
 
                  **rate**:[Reception rate]
 
-                 **prec_level**:[ Number of drop precedence level to add ]
+                 **prec_level**:[Number of drop precedence level to add]
 
 **Remarks**       The parameter specified or enabled in the bands is depends on the action and flags.
 =============  ===============================================
