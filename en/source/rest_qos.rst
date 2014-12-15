@@ -1096,8 +1096,6 @@ In this example, perform the bandwidth guarantee of 800Kbps to AF1 class.
 Also, AF11 class traffic transferred from each DS domain is guaranteed with  400Kbps bandwidth.
 Traffic that is more than 400kbps is treated as excess traffic, and re-marked with AF12 class.
 However, it is still guaranteed that AF12 class is more preferentially transferred than the best effort class.
-As a result, traffic from each DS domain is equally guaranteed a high priority until
-bandwidth 400Kbps and is guaranteed bandwidth about 500Kbps as limit.
 
 .. only:: latex
 
@@ -1353,7 +1351,6 @@ Install the following meter entries to the switches (s2, s3).
 Meter ID  Flags   Bands
 ========= ======= ==================
 1         KBPS    type:DSCP_REMARK,
-                  burst_size:100,
                   rate:400000,
                   prec_level:1
 ========= ======= ==================
@@ -1375,7 +1372,7 @@ Meter ID  Flags   Bands
         }
       ]
 
-    root@ryu-vm:~# curl -X POST -d '{"meter_id": "1", "flags": "KBPS", "bands":[{"type":"DSCP_REMARK", "burst_size": "1", "rate": "400", "prec_level": "1"}]}' http://localhost:8080/qos/meter/0000000000000002
+    root@ryu-vm:~# curl -X POST -d '{"meter_id": "1", "flags": "KBPS", "bands":[{"type":"DSCP_REMARK", "rate": "400", "prec_level": "1"}]}' http://localhost:8080/qos/meter/0000000000000002
       [
         {
           "switch_id": "0000000000000002",
@@ -1401,7 +1398,7 @@ Meter ID  Flags   Bands
       }
     ]
 
-    root@ryu-vm:~# curl -X POST -d '{"meter_id": "1", "flags": "KBPS", "bands":[{"type":"DSCP_REMARK", "burst_size": "1", "rate": "400", "prec_level": "1"}]}' http://localhost:8080/qos/meter/0000000000000003
+    root@ryu-vm:~# curl -X POST -d '{"meter_id": "1", "flags": "KBPS", "bands":[{"type":"DSCP_REMARK", "rate": "400", "prec_level": "1"}]}' http://localhost:8080/qos/meter/0000000000000003
       [
         {
           "switch_id": "0000000000000003",
