@@ -1128,6 +1128,45 @@ source code: ``qos_sample_topology.py``
 
     Change the link speed of ofsoftswitch13 to 1Mbps in advance.
 
+    First, modify the sourcecode of ofsoftswitch13.
+
+    .. rst-class:: console
+
+    ::
+
+        $ cd ofsoftswitch13
+        $ gedit lib/netdev.c
+
+    lib/netdev.c:
+
+    .. rst-class:: sourcecode
+
+    ::
+
+        644           if (ecmd.autoneg) {
+        645               netdev->curr |= OFPPF_AUTONEG;
+        646           }
+        647
+        648 -         netdev->speed = ecmd.speed;
+        649 +         netdev->speed = 1;  /* Fix to 1Mbps link */
+        650
+        651       } else {
+        652           VLOG_DBG(LOG_MODULE, "ioctl(SIOCETHTOOL) failed: %s", strerror(errno));
+        653       }
+
+    Then, re-install ofsoftswitch13.
+
+    .. rst-class:: console
+
+    ::
+
+        $ make clean
+        $ ./boot.sh
+        $ ./configure
+        $ make
+        $ sudo make install
+
+
 An execution example is as follows.
 
 .. rst-class:: console
