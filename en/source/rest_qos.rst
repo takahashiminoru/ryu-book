@@ -283,6 +283,9 @@ Node: c0 (root):
       ]
 
 
+Measuring the bandwidth
+^^^^^^^^^^^^^^^^^^^^^^^
+
 Try to measure the bandwidth by using iperf.
 In the following example, h1(server) listens on the port 5001 and 5002
 with UDP protocol.
@@ -949,6 +952,9 @@ Node: c0 (root):
       ]
 
 
+Measuring the bandwidth
+^^^^^^^^^^^^^^^^^^^^^^^
+
 Try to measure the bandwidth by using iperf.
 In the following example, h1(server) listens on the port 5001, 5002 and
 5003 with UDP protocol.
@@ -1549,6 +1555,10 @@ Node: c0 (root):
         }
       ]
 
+
+Measuring the bandwidth
+^^^^^^^^^^^^^^^^^^^^^^^
+
 Try to measure the bandwidth by using iperf.
 h1(server) is listening on port 5001 and 5002 and port 5003 in the UDP protocol.
 h2, h3 (client) sends the traffic of each class addressed to h1.
@@ -1576,7 +1586,8 @@ Node: h1(1) (root):
     root@ryu-vm:~# iperf -s -u -p 5003 &
     ...
 
-* Best-effort traffic & AF11 excess traffic
+Best-effort traffic & AF11 excess traffic
+"""""""""""""""""""""""""""""""""""""""""
 
 Node: h2 (root):
 
@@ -1620,7 +1631,8 @@ Node: h3(1) (root):
 The above result shows, even if the traffic of AF11 exceeds the contracted bandwidth 400Kbps,
 AF11 is more preferentially guaranteed bandwidth than traffic of best effort.
 
-* Best-effort traffic & AF11 non-excess traffic & AF11 excess traffic
+Best-effort traffic & AF11 non-excess traffic & AF11 excess traffic
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Node: h2 (root):
 
@@ -1683,7 +1695,8 @@ Node: h3(2) (root):
 
 The above result shows, traffic within the contracted bandwidth of 400Kbps are not dropped.
 
-* AF11 excess traffic & AF11 excess traffic
+AF11 excess traffic & AF11 excess traffic
+"""""""""""""""""""""""""""""""""""""""""
 
 Node: h2 (root):
 
