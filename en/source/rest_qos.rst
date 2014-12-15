@@ -1307,7 +1307,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=1"
+              "details": "QoS added. : qos_id=4"
             }
           ]
         }
@@ -1320,7 +1320,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=2"
+              "details": "QoS added. : qos_id=5"
             }
           ]
         }
@@ -1333,7 +1333,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=3"
+              "details": "QoS added. : qos_id=6"
             }
           ]
         }
@@ -1629,7 +1629,7 @@ Node: h3(1) (root):
 The above result shows, even if the traffic of AF11 exceeds the contracted bandwidth 400Kbps,
 AF11 is more preferentially guaranteed bandwidth than traffic of best effort.
 
-Best-effort traffic & AF11 non-excess traffic & AF11 excess traffic
+AF11 excess traffic & Best-effort traffic & AF11 non-excess traffic
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Node: h2 (root):
@@ -1806,7 +1806,7 @@ Delete queue
 
 =============  ================================================
 **Method**     DELETE
-**URL**        /qos/queue/{**swtich-id**}
+**URL**        /qos/queue/{**swtich**}
 
                --**switch**: [ "all" \| *Switch ID* ]
 
@@ -1863,9 +1863,9 @@ Set a QoS rule
                  **ip_dscp**:[ 0 - 63 ]
 
                **actions**:
-                 [ "mark": [ 0 - 63  ] \|
-                 [ "meter": [ Meter ID ] \|
-                 [ "queue": [ Queue ID ]
+                 [ "mark": [ 0 - 63  ] ] \|
+                 [ "meter": [ Meter ID ] ] \|
+                 [ "queue": [ Queue ID ] ]
 
 **Remarks**    If successful registration, QoS ID is generated, it will be described in the response.
 
