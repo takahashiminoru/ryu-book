@@ -1308,7 +1308,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=1"
+              "details": "QoS added. : qos_id=4"
             }
           ]
         }
@@ -1321,7 +1321,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=2"
+              "details": "QoS added. : qos_id=5"
             }
           ]
         }
@@ -1334,7 +1334,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=3"
+              "details": "QoS added. : qos_id=6"
             }
           ]
         }
@@ -1808,7 +1808,7 @@ Delete queue
 
 =============  ================================================
 **Method**     DELETE
-**URL**        /qos/queue/{**swtich-id**}
+**URL**        /qos/queue/{**swtich**}
 
                --**switch**: [ "all" \| *Switch ID* ]
 
