@@ -1131,6 +1131,7 @@ source code: ``qos_sample_topology.py``
 .. NOTE::
 
     Change the link speed of ofsoftswitch13 to 1Mbps in advance.
+
     First, modify the sourcecode of ofsoftswitch13.
 
     .. rst-class:: console
@@ -1150,7 +1151,7 @@ source code: ``qos_sample_topology.py``
         645               netdev->curr |= OFPPF_AUTONEG;
         646           }
         647
-        648           netdev->speed = ecmd.speed;
+        648 -         netdev->speed = ecmd.speed;
         649 +         netdev->speed = 1;  /* Fix to 1Mbps link */
         650
         651       } else {
@@ -1628,7 +1629,7 @@ Node: h3(1) (root):
 The above result shows, even if the traffic of AF11 exceeds the contracted bandwidth 400Kbps,
 AF11 is more preferentially guaranteed bandwidth than traffic of best effort.
 
-Best-effort traffic & AF11 non-excess traffic & AF11 excess traffic
+AF11 excess traffic & Best-effort traffic & AF11 non-excess traffic
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Node: h2 (root):
@@ -1862,9 +1863,9 @@ Set a QoS rule
                  **ip_dscp**:[ 0 - 63 ]
 
                **actions**:
-                 [ "mark": [ 0 - 63  ] \|
-                 [ "meter": [ Meter ID ] \|
-                 [ "queue": [ Queue ID ]
+                 [ "mark": [ 0 - 63  ] ] \|
+                 [ "meter": [ Meter ID ] ] \|
+                 [ "queue": [ Queue ID ] ]
 
 **Remarks**    If successful registration, QoS ID is generated, it will be described in the response.
 
