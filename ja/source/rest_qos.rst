@@ -1121,7 +1121,7 @@ DSドメインの境界に位置するルータ(エッジルータ)によって�
         645               netdev->curr |= OFPPF_AUTONEG;
         646           }
         647
-        648 -         netdev->speed = ecmd.speed;
+        648           netdev->speed = ecmd.speed;
         649 +         netdev->speed = 1;  /* Fix to 1Mbps link */
         650
         651       } else {
@@ -1276,7 +1276,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=1"
+              "details": "QoS added. : qos_id=4"
             }
           ]
         }
@@ -1289,7 +1289,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=2"
+              "details": "QoS added. : qos_id=5"
             }
           ]
         }
@@ -1302,7 +1302,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=3"
+              "details": "QoS added. : qos_id=6"
             }
           ]
         }
@@ -1336,7 +1336,7 @@ Node: c0 (root):
           "command_result": [
             {
               "result": "success",
-              "details": "QoS added. : qos_id=1"
+              "details": "QoS added. : qos_id=4"
             }
           ]
         }
@@ -1774,7 +1774,7 @@ REST API一覧
 
 =============  ================================================
 **メソッド**   DELETE 
-**URL**        /qos/queue/{**swtich-id**}
+**URL**        /qos/queue/{**swtich**}
 
                --**switch**: [ "all" \| *スイッチID* ]
 
