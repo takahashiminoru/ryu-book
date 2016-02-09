@@ -1,0 +1,1572 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>ルータ &mdash; Ryubook 1.0 ドキュメント</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/translations.js"></script>
+    <link rel="top" title="Ryubook 1.0 ドキュメント" href="index.html" />
+    <link rel="next" title="QoS" href="rest_qos.html" />
+    <link rel="prev" title="ファイアウォール" href="rest_firewall.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>ナビゲーション</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="総合索引"
+             accesskey="I">索引</a></li>
+        <li class="right" >
+          <a href="rest_qos.html" title="QoS"
+             accesskey="N">次へ</a> |</li>
+        <li class="right" >
+          <a href="rest_firewall.html" title="ファイアウォール"
+             accesskey="P">前へ</a> |</li>
+        <li><a href="index.html">Ryubook 1.0 ドキュメント</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="ch-rest-router">
+<span id="id1"></span><h1>ルータ<a class="headerlink" href="#ch-rest-router" title="このヘッドラインへのパーマリンク">¶</a></h1>
+<p>本章では、RESTで設定が出来るルータの使用方法について説明します。</p>
+<div class="section" id="id2">
+<h2>シングルテナントでの動作例<a class="headerlink" href="#id2" title="このヘッドラインへのパーマリンク">¶</a></h2>
+<p>以下のようなトポロジを作成し、各スイッチ(ルータ)に対してアドレスやルートの追加・削除を行い、各ホスト間の疎通可否を確認する例を紹介します。</p>
+<a class="reference internal image-reference" href="_images/fig16.png"><img alt="_images/fig16.png" class="align-center" src="_images/fig16.png" style="width: 400.0px; height: 246.8px;" /></a>
+<div class="section" id="id3">
+<h3>環境構築<a class="headerlink" href="#id3" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>まずはMininet上に環境を構築します。<tt class="docutils literal"><span class="pre">mn</span></tt>コマンドのパラメータは以下のようになります。</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="15%" />
+<col width="66%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">パラメータ</th>
+<th class="head">値</th>
+<th class="head">説明</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>topo</td>
+<td>linear,3</td>
+<td>3台のスイッチが直列に接続されているトポロジ</td>
+</tr>
+<tr class="row-odd"><td>mac</td>
+<td>なし</td>
+<td>自動的にホストのMACアドレスをセットする</td>
+</tr>
+<tr class="row-even"><td>switch</td>
+<td>ovsk</td>
+<td>Open vSwitchを使用する</td>
+</tr>
+<tr class="row-odd"><td>controller</td>
+<td>remote</td>
+<td>OpenFlowコントローラは外部のものを利用する</td>
+</tr>
+<tr class="row-even"><td>x</td>
+<td>なし</td>
+<td>xtermを起動する</td>
+</tr>
+</tbody>
+</table>
+<p>実行例は以下のようになります。</p>
+<div class="console highlight-python"><div class="highlight"><pre>ryu@ryu-vm:~$ sudo mn --topo linear,3 --mac --switch ovsk --controller remote -x
+*** Creating network
+*** Adding controller
+Unable to contact the remote controller at 127.0.0.1:6633
+*** Adding hosts:
+h1 h2 h3
+*** Adding switches:
+s1 s2 s3
+*** Adding links:
+(h1, s1) (h2, s2) (h3, s3) (s1, s2) (s2, s3)
+*** Configuring hosts
+h1 h2 h3
+*** Running terms on localhost:10.0
+*** Starting controller
+*** Starting 3 switches
+s1 s2 s3
+
+*** Starting CLI:
+mininet&gt;
+</pre></div>
+</div>
+<p>また、コントローラ用のxtermをもうひとつ起動しておきます。</p>
+<div class="console highlight-python"><div class="highlight"><pre>mininet&gt; xterm c0
+mininet&gt;
+</pre></div>
+</div>
+<p>続いて、各ルータで使用するOpenFlowのバージョンを1.3に設定します。</p>
+<p>switch: s1 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ovs-vsctl set Bridge s1 protocols=OpenFlow13
+</pre></div>
+</div>
+<p>switch: s2 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ovs-vsctl set Bridge s2 protocols=OpenFlow13
+</pre></div>
+</div>
+<p>switch: s3 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ovs-vsctl set Bridge s3 protocols=OpenFlow13
+</pre></div>
+</div>
+<p>その後、各ホストで自動的に割り当てられているIPアドレスを削除し、新たにIPアドレスを設定します。</p>
+<p>host: h1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.1/8 dev h1-eth0
+root@ryu-vm:~# ip addr add 172.16.20.10/24 dev h1-eth0
+</pre></div>
+</div>
+<p>host: h2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.2/8 dev h2-eth0
+root@ryu-vm:~# ip addr add 172.16.10.10/24 dev h2-eth0
+</pre></div>
+</div>
+<p>host: h3:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.3/8 dev h3-eth0
+root@ryu-vm:~# ip addr add 192.168.30.10/24 dev h3-eth0
+</pre></div>
+</div>
+<p>最後に、コントローラのxterm上でrest_routerを起動させます。</p>
+<p>controller: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ryu-manager ryu.app.rest_router
+loading app ryu.app.rest_router
+loading app ryu.controller.ofp_handler
+instantiating app None of DPSet
+creating context dpset
+creating context wsgi
+instantiating app ryu.app.rest_router of RestRouterAPI
+instantiating app ryu.controller.ofp_handler of OFPHandler
+(2212) wsgi starting up on http://0.0.0.0:8080/
+</pre></div>
+</div>
+<p>Ryuとルータの間の接続に成功すると、次のメッセージが表示されます。</p>
+<p>controller: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>[RT][INFO] switch_id=0000000000000003: Set SW config for TTL error packet in.
+[RT][INFO] switch_id=0000000000000003: Set ARP handling (packet in) flow [cookie=0x0]
+[RT][INFO] switch_id=0000000000000003: Set L2 switching (normal) flow [cookie=0x0]
+[RT][INFO] switch_id=0000000000000003: Set default route (drop) flow [cookie=0x0]
+[RT][INFO] switch_id=0000000000000003: Start cyclic routing table update.
+[RT][INFO] switch_id=0000000000000003: Join as router.
+...
+</pre></div>
+</div>
+<p>上記ログがルータ3台分表示されれば準備完了です。</p>
+</div>
+<div class="section" id="id4">
+<h3>アドレスの設定<a class="headerlink" href="#id4" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>各ルータにアドレスを設定します。</p>
+<p>まず、ルータs1にアドレス「172.16.20.1/24」と「172.16.30.30/24」を設定します。</p>
+<div class="admonition note">
+<p class="first admonition-title">ノート</p>
+<p class="last">以降の説明で使用するREST APIの詳細は、章末の「<a class="reference internal" href="#rest-api">REST API一覧</a>」を参照してください。</p>
+</div>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;:&quot;172.16.20.1/24&quot;}&#39; http://localhost:8080/router/0000000000000001
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;172.16.30.30/24&quot;}&#39; http://localhost:8080/router/0000000000000001
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">ノート</p>
+<p class="last">RESTコマンドの実行結果は見やすいように整形しています。</p>
+</div>
+<p>続いて、ルータs2にアドレス「172.16.10.1/24」「172.16.30.1/24」「192.168.10.1/24」を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;:&quot;172.16.10.1/24&quot;}&#39; http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;172.16.30.1/24&quot;}&#39; http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;192.168.10.1/24&quot;}&#39; http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add address [address_id=3]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>さらに、ルータs3にアドレス「192.168.30.1/24」と「192.168.10.20/24」を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;192.168.30.1/24&quot;}&#39; http://localhost:8080/router/0000000000000003
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;192.168.10.20/24&quot;}&#39; http://localhost:8080/router/0000000000000003
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータへのIPアドレスの設定ができたので、各ホストにデフォルトゲートウェイとして登録します。</p>
+<p>host: h1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 172.16.20.1
+</pre></div>
+</div>
+<p>host: h2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 172.16.10.1
+</pre></div>
+</div>
+<p>host: h3:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 192.168.30.1
+</pre></div>
+</div>
+</div>
+<div class="section" id="id5">
+<h3>デフォルトルートの設定<a class="headerlink" href="#id5" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>各ルータにデフォルトルートを設定します。</p>
+<p>まず、ルータs1のデフォルトルートとしてルータs2を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;172.16.30.1&quot;}&#39; http://localhost:8080/router/0000000000000001
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータs2のデフォルトルートにはルータs1を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;172.16.30.30&quot;}&#39; http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータs3のデフォルトルートにはルータs2を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;192.168.10.1&quot;}&#39; http://localhost:8080/router/0000000000000003
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+</div>
+<div class="section" id="id6">
+<h3>静的ルートの設定<a class="headerlink" href="#id6" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>ルータs2に対し、ルータs3配下のホスト(192.168.30.0/24)へのスタティックルートを設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;destination&quot;: &quot;192.168.30.0/24&quot;, &quot;gateway&quot;: &quot;192.168.10.20&quot;}&#39; http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Add route [route_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>アドレスやルートの設定状態は、次のようになります。</p>
+<a class="reference internal image-reference" href="_images/fig42.png"><img alt="_images/fig42.png" class="align-center" src="_images/fig42.png" style="width: 400.0px; height: 288.0px;" /></a>
+</div>
+<div class="section" id="id7">
+<h3>設定内容の確認<a class="headerlink" href="#id7" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>各ルータに設定された内容を確認します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl http://localhost:8080/router/0000000000000001
+  [
+    {
+      &quot;internal_network&quot;: [
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;172.16.30.1&quot;
+            }
+          ],
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;172.16.20.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;172.16.30.30/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;
+    }
+  ]
+
+root@ryu-vm:~# curl http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;internal_network&quot;: [
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;172.16.30.30&quot;
+            },
+            {
+              &quot;route_id&quot;: 2,
+              &quot;destination&quot;: &quot;192.168.30.0/24&quot;,
+              &quot;gateway&quot;: &quot;192.168.10.20&quot;
+            }
+          ],
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;172.16.30.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 3,
+              &quot;address&quot;: &quot;192.168.10.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;172.16.10.1/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;
+    }
+  ]
+
+root@ryu-vm:~# curl http://localhost:8080/router/0000000000000003
+  [
+    {
+      &quot;internal_network&quot;: [
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;192.168.10.1&quot;
+            }
+          ],
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;192.168.30.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;192.168.10.20/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;
+    }
+  ]
+</pre></div>
+</div>
+<p>この状態で、pingによる疎通を確認してみます。まず、h2からh3へpingを実行します。正常に疎通できることが確認できます。</p>
+<p>host: h2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ping 192.168.30.10
+PING 192.168.30.10 (192.168.30.10) 56(84) bytes of data.
+64 bytes from 192.168.30.10: icmp_req=1 ttl=62 time=48.8 ms
+64 bytes from 192.168.30.10: icmp_req=2 ttl=62 time=0.402 ms
+64 bytes from 192.168.30.10: icmp_req=3 ttl=62 time=0.089 ms
+64 bytes from 192.168.30.10: icmp_req=4 ttl=62 time=0.065 ms
+...
+</pre></div>
+</div>
+<p>また、h2からh1へpingを実行します。こちらも正常に疎通できることが確認できます。</p>
+<p>host: h2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ping 172.16.20.10
+PING 172.16.20.10 (172.16.20.10) 56(84) bytes of data.
+64 bytes from 172.16.20.10: icmp_req=1 ttl=62 time=43.2 ms
+64 bytes from 172.16.20.10: icmp_req=2 ttl=62 time=0.306 ms
+64 bytes from 172.16.20.10: icmp_req=3 ttl=62 time=0.057 ms
+64 bytes from 172.16.20.10: icmp_req=4 ttl=62 time=0.048 ms
+...
+</pre></div>
+</div>
+</div>
+<div class="section" id="id8">
+<h3>静的ルートの削除<a class="headerlink" href="#id8" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>ルータs2に設定したルータs3へのスタティックルートを削除します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X DELETE -d &#39;{&quot;route_id&quot;: &quot;2&quot;}&#39; http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Delete route [route_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータs2に設定された情報を確認してみます。ルータs3へのスタティックルートが削除されていることがわかります。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl http://localhost:8080/router/0000000000000002
+  [
+    {
+      &quot;internal_network&quot;: [
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;172.16.30.30&quot;
+            }
+          ],
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;172.16.30.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 3,
+              &quot;address&quot;: &quot;192.168.10.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;172.16.10.1/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;
+    }
+  ]
+</pre></div>
+</div>
+<p>この状態で、pingによる疎通を確認してみます。h2からh3へはルート情報がなくなったため、疎通できないことがわかります。</p>
+<p>host: h2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ping 192.168.30.10
+PING 192.168.30.10 (192.168.30.10) 56(84) bytes of data.
+^C
+--- 192.168.30.10 ping statistics ---
+12 packets transmitted, 0 received, 100% packet loss, time 11088ms
+</pre></div>
+</div>
+</div>
+<div class="section" id="id9">
+<h3>アドレスの削除<a class="headerlink" href="#id9" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>ルータs1に設定したアドレス「172.16.20.1/24」を削除します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X DELETE -d &#39;{&quot;address_id&quot;: &quot;1&quot;}&#39; http://localhost:8080/router/0000000000000001
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;details&quot;: &quot;Delete address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータs1に設定された情報を確認してみます。ルータs1に設定されたIPアドレスのうち、「172.16.20.1/24」が削除されていることがわかります。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl http://localhost:8080/router/0000000000000001
+  [
+    {
+      &quot;internal_network&quot;: [
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;172.16.30.1&quot;
+            }
+          ],
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;172.16.30.30/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;
+    }
+  ]
+</pre></div>
+</div>
+<p>この状態で、pingによる疎通を確認してみます。h2からh1へは、h1の所属するサブネットに関する情報がルータs1から削除されたため、疎通できないことがわかります。</p>
+<p>host: h2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ping 172.16.20.10
+PING 172.16.20.10 (172.16.20.10) 56(84) bytes of data.
+^C
+--- 172.16.20.10 ping statistics ---
+19 packets transmitted, 0 received, 100% packet loss, time 18004ms
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="id10">
+<h2>マルチテナントでの動作例<a class="headerlink" href="#id10" title="このヘッドラインへのパーマリンク">¶</a></h2>
+<p>続いて、VLANによるテナント分けが行われている以下のようなトポロジを作成し、各スイッチ(ルータ)に対してアドレスやルートの追加・削除を行い、各ホスト間の疎通可否を確認する例を紹介します。</p>
+<a class="reference internal image-reference" href="_images/fig51.png"><img alt="_images/fig51.png" class="align-center" src="_images/fig51.png" style="width: 498.0px; height: 318.4px;" /></a>
+<div class="section" id="id11">
+<h3>環境構築<a class="headerlink" href="#id11" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>まずはMininet上に環境を構築します。<tt class="docutils literal"><span class="pre">mn</span></tt>コマンドのパラメータは以下のようになります。</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="18%" />
+<col width="18%" />
+<col width="64%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">パラメータ</th>
+<th class="head">値</th>
+<th class="head">説明</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>topo</td>
+<td>linear,3,2</td>
+<td><p class="first">3台のスイッチが直列に接続されているトポロジ</p>
+<p class="last">(各スイッチに2台のホストが接続される)</p>
+</td>
+</tr>
+<tr class="row-odd"><td>mac</td>
+<td>なし</td>
+<td>自動的にホストのMACアドレスをセットする</td>
+</tr>
+<tr class="row-even"><td>switch</td>
+<td>ovsk</td>
+<td>Open vSwitchを使用する</td>
+</tr>
+<tr class="row-odd"><td>controller</td>
+<td>remote</td>
+<td>OpenFlowコントローラは外部のものを利用する</td>
+</tr>
+<tr class="row-even"><td>x</td>
+<td>なし</td>
+<td>xtermを起動する</td>
+</tr>
+</tbody>
+</table>
+<p>実行例は以下のようになります。</p>
+<div class="console highlight-python"><div class="highlight"><pre>ryu@ryu-vm:~$ sudo mn --topo linear,3,2 --mac --switch ovsk --controller remote -x
+*** Creating network
+*** Adding controller
+Unable to contact the remote controller at 127.0.0.1:6633
+*** Adding hosts:
+h1s1 h1s2 h1s3 h2s1 h2s2 h2s3
+*** Adding switches:
+s1 s2 s3
+*** Adding links:
+(h1s1, s1) (h1s2, s2) (h1s3, s3) (h2s1, s1) (h2s2, s2) (h2s3, s3) (s1, s2) (s2, s3)
+*** Configuring hosts
+h1s1 h1s2 h1s3 h2s1 h2s2 h2s3
+*** Running terms on localhost:10.0
+*** Starting controller
+*** Starting 3 switches
+s1 s2 s3
+*** Starting CLI:
+mininet&gt;
+</pre></div>
+</div>
+<p>また、コントローラ用のxtermをもうひとつ起動しておきます。</p>
+<div class="console highlight-python"><div class="highlight"><pre>mininet&gt; xterm c0
+mininet&gt;
+</pre></div>
+</div>
+<p>続いて、各ルータで使用するOpenFlowのバージョンを1.3に設定します。</p>
+<p>switch: s1 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ovs-vsctl set Bridge s1 protocols=OpenFlow13
+</pre></div>
+</div>
+<p>switch: s2 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ovs-vsctl set Bridge s2 protocols=OpenFlow13
+</pre></div>
+</div>
+<p>switch: s3 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ovs-vsctl set Bridge s3 protocols=OpenFlow13
+</pre></div>
+</div>
+<p>その後、各ホストのインターフェースに VLAN ID を設定し、新たにIPアドレスを設定します。</p>
+<p>host: h1s1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.1/8 dev h1s1-eth0
+root@ryu-vm:~# ip link add link h1s1-eth0 name h1s1-eth0.2 type vlan id 2
+root@ryu-vm:~# ip addr add 172.16.10.10/24 dev h1s1-eth0.2
+root@ryu-vm:~# ip link set dev h1s1-eth0.2 up
+</pre></div>
+</div>
+<p>host: h2s1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.4/8 dev h2s1-eth0
+root@ryu-vm:~# ip link add link h2s1-eth0 name h2s1-eth0.110 type vlan id 110
+root@ryu-vm:~# ip addr add 172.16.10.11/24 dev h2s1-eth0.110
+root@ryu-vm:~# ip link set dev h2s1-eth0.110 up
+</pre></div>
+</div>
+<p>host: h1s2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.2/8 dev h1s2-eth0
+root@ryu-vm:~# ip link add link h1s2-eth0 name h1s2-eth0.2 type vlan id 2
+root@ryu-vm:~# ip addr add 192.168.30.10/24 dev h1s2-eth0.2
+root@ryu-vm:~# ip link set dev h1s2-eth0.2 up
+</pre></div>
+</div>
+<p>host: h2s2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.5/8 dev h2s2-eth0
+root@ryu-vm:~# ip link add link h2s2-eth0 name h2s2-eth0.110 type vlan id 110
+root@ryu-vm:~# ip addr add 192.168.30.11/24 dev h2s2-eth0.110
+root@ryu-vm:~# ip link set dev h2s2-eth0.110 up
+</pre></div>
+</div>
+<p>host: h1s3:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.3/8 dev h1s3-eth0
+root@ryu-vm:~# ip link add link h1s3-eth0 name h1s3-eth0.2 type vlan id 2
+root@ryu-vm:~# ip addr add 172.16.20.10/24 dev h1s3-eth0.2
+root@ryu-vm:~# ip link set dev h1s3-eth0.2 up
+</pre></div>
+</div>
+<p>host: h2s3:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip addr del 10.0.0.6/8 dev h2s3-eth0
+root@ryu-vm:~# ip link add link h2s3-eth0 name h2s3-eth0.110 type vlan id 110
+root@ryu-vm:~# ip addr add 172.16.20.11/24 dev h2s3-eth0.110
+root@ryu-vm:~# ip link set dev h2s3-eth0.110 up
+</pre></div>
+</div>
+<p>最後に、コントローラのxterm上でrest_routerを起動させます。</p>
+<p>controller: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ryu-manager ryu.app.rest_router
+loading app ryu.app.rest_router
+loading app ryu.controller.ofp_handler
+instantiating app None of DPSet
+creating context dpset
+creating context wsgi
+instantiating app ryu.app.rest_router of RestRouterAPI
+instantiating app ryu.controller.ofp_handler of OFPHandler
+(2447) wsgi starting up on http://0.0.0.0:8080/
+</pre></div>
+</div>
+<p>Ryuとルータの間の接続に成功すると、次のメッセージが表示されます。</p>
+<p>controller: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>[RT][INFO] switch_id=0000000000000003: Set SW config for TTL error packet in.
+[RT][INFO] switch_id=0000000000000003: Set ARP handling (packet in) flow [cookie=0x0]
+[RT][INFO] switch_id=0000000000000003: Set L2 switching (normal) flow [cookie=0x0]
+[RT][INFO] switch_id=0000000000000003: Set default route (drop) flow [cookie=0x0]
+[RT][INFO] switch_id=0000000000000003: Start cyclic routing table update.
+[RT][INFO] switch_id=0000000000000003: Join as router.
+...
+</pre></div>
+</div>
+<p>上記ログがルータ3台分表示されれば準備完了です。</p>
+</div>
+<div class="section" id="id12">
+<h3>アドレスの設定<a class="headerlink" href="#id12" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>各ルータにアドレスを設定します。</p>
+<p>まず、ルータs1にアドレス「172.16.20.1/24」と「10.10.10.1/24」を設定します。それぞれVLAN IDごとに設定する必要があります。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;172.16.10.1/24&quot;}&#39; http://localhost:8080/router/0000000000000001/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;10.10.10.1/24&quot;}&#39; http://localhost:8080/router/0000000000000001/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;172.16.10.1/24&quot;}&#39; http://localhost:8080/router/0000000000000001/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;10.10.10.1/24&quot;}&#39; http://localhost:8080/router/0000000000000001/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>続いて、ルータs2にアドレス「192.168.30.1/24」と「10.10.10.2/24」を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;192.168.30.1/24&quot;}&#39; http://localhost:8080/router/0000000000000002/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;10.10.10.2/24&quot;}&#39; http://localhost:8080/router/0000000000000002/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;192.168.30.1/24&quot;}&#39; http://localhost:8080/router/0000000000000002/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;10.10.10.2/24&quot;}&#39; http://localhost:8080/router/0000000000000002/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>さらに、ルータs3にアドレス「172.16.20.1/24」と「10.10.10.3/24」を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;172.16.20.1/24&quot;}&#39; http://localhost:8080/router/0000000000000003/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;10.10.10.3/24&quot;}&#39; http://localhost:8080/router/0000000000000003/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;172.16.20.1/24&quot;}&#39; http://localhost:8080/router/0000000000000003/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add address [address_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;address&quot;: &quot;10.10.10.3/24&quot;}&#39; http://localhost:8080/router/0000000000000003/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add address [address_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータへのIPアドレスの設定ができたので、各ホストにデフォルトゲートウェイとして登録します。</p>
+<p>host: h1s1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 172.16.10.1
+</pre></div>
+</div>
+<p>host: h2s1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 172.16.10.1
+</pre></div>
+</div>
+<p>host: h1s2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 192.168.30.1
+</pre></div>
+</div>
+<p>host: h2s2:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 192.168.30.1
+</pre></div>
+</div>
+<p>host: h1s3:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 172.16.20.1
+</pre></div>
+</div>
+<p>host: h2s3:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ip route add default via 172.16.20.1
+</pre></div>
+</div>
+<p>設定されたアドレスは、次の通りです。</p>
+<a class="reference internal image-reference" href="_images/fig7.png"><img alt="_images/fig7.png" class="align-center" src="_images/fig7.png" style="width: 480.0px; height: 346.0px;" /></a>
+</div>
+<div class="section" id="id13">
+<h3>デフォルトルートと静的ルートの設定<a class="headerlink" href="#id13" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>各ルータにデフォルトルートと静的ルートを設定します。</p>
+<p>まず、ルータs1のデフォルトルートとしてルータs2を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;10.10.10.2&quot;}&#39; http://localhost:8080/router/0000000000000001/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;10.10.10.2&quot;}&#39; http://localhost:8080/router/0000000000000001/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータs2のデフォルトルートにはルータs1を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;10.10.10.1&quot;}&#39; http://localhost:8080/router/0000000000000002/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;10.10.10.1&quot;}&#39; http://localhost:8080/router/0000000000000002/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>ルータs3のデフォルトルートにはルータs2を設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;10.10.10.2&quot;}&#39; http://localhost:8080/router/0000000000000003/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+
+root@ryu-vm:~# curl -X POST -d &#39;{&quot;gateway&quot;: &quot;10.10.10.2&quot;}&#39; http://localhost:8080/router/0000000000000003/110
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 110,
+          &quot;details&quot;: &quot;Add route [route_id=1]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+<p>続いてルータs2に対し、ルータs3配下のホスト(172.16.20.0/24)へのスタティックルートを設定します。vlan_id=2の場合のみ設定します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl -X POST -d &#39;{&quot;destination&quot;: &quot;172.16.20.0/24&quot;, &quot;gateway&quot;: &quot;10.10.10.3&quot;}&#39; http://localhost:8080/router/0000000000000002/2
+  [
+    {
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;,
+      &quot;command_result&quot;: [
+        {
+          &quot;result&quot;: &quot;success&quot;,
+          &quot;vlan_id&quot;: 2,
+          &quot;details&quot;: &quot;Add route [route_id=2]&quot;
+        }
+      ]
+    }
+  ]
+</pre></div>
+</div>
+</div>
+<div class="section" id="id14">
+<h3>設定内容の確認<a class="headerlink" href="#id14" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<p>各ルータに設定された内容を確認します。</p>
+<p>Node: c0 (root):</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# curl http://localhost:8080/router/all/all
+  [
+    {
+      &quot;internal_network&quot;: [
+        {},
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;10.10.10.2&quot;
+            }
+          ],
+          &quot;vlan_id&quot;: 2,
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;10.10.10.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;172.16.10.1/24&quot;
+            }
+          ]
+        },
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;10.10.10.2&quot;
+            }
+          ],
+          &quot;vlan_id&quot;: 110,
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;10.10.10.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;172.16.10.1/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000001&quot;
+    },
+    {
+      &quot;internal_network&quot;: [
+        {},
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 2,
+              &quot;destination&quot;: &quot;172.16.20.0/24&quot;,
+              &quot;gateway&quot;: &quot;10.10.10.3&quot;
+            },
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;10.10.10.1&quot;
+            }
+          ],
+          &quot;vlan_id&quot;: 2,
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;10.10.10.2/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;192.168.30.1/24&quot;
+            }
+          ]
+        },
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;10.10.10.1&quot;
+            }
+          ],
+          &quot;vlan_id&quot;: 110,
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;10.10.10.2/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;192.168.30.1/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000002&quot;
+    },
+    {
+      &quot;internal_network&quot;: [
+        {},
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;10.10.10.2&quot;
+            }
+          ],
+          &quot;vlan_id&quot;: 2,
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;172.16.20.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;10.10.10.3/24&quot;
+            }
+          ]
+        },
+        {
+          &quot;route&quot;: [
+            {
+              &quot;route_id&quot;: 1,
+              &quot;destination&quot;: &quot;0.0.0.0/0&quot;,
+              &quot;gateway&quot;: &quot;10.10.10.2&quot;
+            }
+          ],
+          &quot;vlan_id&quot;: 110,
+          &quot;address&quot;: [
+            {
+              &quot;address_id&quot;: 1,
+              &quot;address&quot;: &quot;172.16.20.1/24&quot;
+            },
+            {
+              &quot;address_id&quot;: 2,
+              &quot;address&quot;: &quot;10.10.10.3/24&quot;
+            }
+          ]
+        }
+      ],
+      &quot;switch_id&quot;: &quot;0000000000000003&quot;
+    }
+  ]
+</pre></div>
+</div>
+<p>各ルータの設定内容を表にすると、下記のようになります。</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+<col width="20%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">ルータ</th>
+<th class="head">VLAN ID</th>
+<th class="head">IPアドレス</th>
+<th class="head">デフォルトルート</th>
+<th class="head">静的ルート</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>s1</td>
+<td>2</td>
+<td>172.16.10.1/24, 10.10.10.1/24</td>
+<td>10.10.10.2(s2)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>s1</td>
+<td>110</td>
+<td>172.16.10.1/24, 10.10.10.1/24</td>
+<td>10.10.10.2(s2)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>s2</td>
+<td>2</td>
+<td>192.168.30.1/24, 10.10.10.2/24</td>
+<td>10.10.10.1(s1)</td>
+<td>宛先:172.16.20.0/24, ゲートウェイ:10.10.10.3(s3)</td>
+</tr>
+<tr class="row-odd"><td>s2</td>
+<td>110</td>
+<td>192.168.30.1/24, 10.10.10.2/24</td>
+<td>10.10.10.1(s1)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-even"><td>s3</td>
+<td>2</td>
+<td>172.16.20.1/24, 10.10.10.3/24</td>
+<td>10.10.10.2(s2)</td>
+<td>&nbsp;</td>
+</tr>
+<tr class="row-odd"><td>s3</td>
+<td>110</td>
+<td>172.16.20.1/24, 10.10.10.3/24</td>
+<td>10.10.10.2(s2)</td>
+<td>&nbsp;</td>
+</tr>
+</tbody>
+</table>
+<p>h1s1からh1s3に対しpingを送信してみます。同じvlan_id=2のホスト同士であり、ルータs2にs3宛の静的ルートが設定されているため、疎通が可能です。</p>
+<p>host: h1s1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ping 172.16.20.10
+PING 172.16.20.10 (172.16.20.10) 56(84) bytes of data.
+64 bytes from 172.16.20.10: icmp_req=1 ttl=61 time=45.9 ms
+64 bytes from 172.16.20.10: icmp_req=2 ttl=61 time=0.257 ms
+64 bytes from 172.16.20.10: icmp_req=3 ttl=61 time=0.059 ms
+64 bytes from 172.16.20.10: icmp_req=4 ttl=61 time=0.182 ms
+</pre></div>
+</div>
+<p>h2s1からh2s3に対しpingを送信してみます。同じvlan_id=110のホスト同士ですが、ルータs2にs3宛の静的ルートが設定されていないため、疎通が不可能です。</p>
+<p>host: h2s1:</p>
+<div class="console highlight-python"><div class="highlight"><pre>root@ryu-vm:~# ping 172.16.20.11
+PING 172.16.20.11 (172.16.20.11) 56(84) bytes of data.
+^C
+--- 172.16.20.11 ping statistics ---
+8 packets transmitted, 0 received, 100% packet loss, time 7009ms
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="_images/fig8.png"><img alt="_images/fig8.png" class="align-center" src="_images/fig8.png" style="width: 480.0px; height: 346.0px;" /></a>
+<p>本章では、具体例を挙げながらルータの使用方法を説明しました。</p>
+</div>
+</div>
+<div class="section" id="rest-api">
+<h2>REST API一覧<a class="headerlink" href="#rest-api" title="このヘッドラインへのパーマリンク">¶</a></h2>
+<p>本章で紹介したrest_routerのREST API一覧です。</p>
+<div class="section" id="id15">
+<h3>設定の取得<a class="headerlink" href="#id15" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="25%" />
+<col width="75%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>メソッド</strong></td>
+<td>GET</td>
+</tr>
+<tr class="row-even"><td><strong>URL</strong></td>
+<td><p class="first">/router/{<strong>switch</strong>}[/{<strong>vlan</strong>}]</p>
+<p>&#8211;<strong>switch</strong>: [ &#8220;all&#8221; |<em>スイッチID</em>]</p>
+<p class="last">&#8211;<strong>vlan</strong>: [ &#8220;all&#8221; |<em>VLAN ID</em>]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><strong>備考</strong></td>
+<td>VLAN IDの指定はオプションです。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id16">
+<h3>アドレスの設定<a class="headerlink" href="#id16" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>メソッド</strong></td>
+<td>POST</td>
+</tr>
+<tr class="row-even"><td><strong>URL</strong></td>
+<td><p class="first">/router/{<strong>switch</strong>}[/{<strong>vlan</strong>}]</p>
+<p>&#8211;<strong>switch</strong>: [ &#8220;all&#8221; |<em>スイッチID</em>]</p>
+<p class="last">&#8211;<strong>vlan</strong>: [ &#8220;all&#8221; |<em>VLAN ID</em>]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><strong>データ</strong></td>
+<td><strong>address</strong>:&#8221;&lt;xxx.xxx.xxx.xxx/xx&gt;&#8221;</td>
+</tr>
+<tr class="row-even"><td><strong>備考</strong></td>
+<td><p class="first">アドレス設定はルート設定前に行ってください。</p>
+<p class="last">VLAN IDの指定はオプションです。</p>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id17">
+<h3>静的ルートの設定<a class="headerlink" href="#id17" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>メソッド</strong></td>
+<td>POST</td>
+</tr>
+<tr class="row-even"><td><strong>URL</strong></td>
+<td><p class="first">/router/{<strong>switch</strong>}[/{<strong>vlan</strong>}]</p>
+<p>&#8211;<strong>switch</strong>: [ &#8220;all&#8221; |<em>スイッチID</em>]</p>
+<p class="last">&#8211;<strong>vlan</strong>: [ &#8220;all&#8221; |<em>VLAN ID</em>]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><strong>データ</strong></td>
+<td><p class="first"><strong>destination</strong>:&#8221;&lt;xxx.xxx.xxx.xxx/xx&gt;&#8221;</p>
+<p class="last"><strong>gateway</strong>:&#8221;&lt;xxx.xxx.xxx.xxx&gt;&#8221;</p>
+</td>
+</tr>
+<tr class="row-even"><td><strong>備考</strong></td>
+<td>VLAN IDの指定はオプションです。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id18">
+<h3>デフォルトルートの設定<a class="headerlink" href="#id18" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="21%" />
+<col width="79%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>メソッド</strong></td>
+<td>POST</td>
+</tr>
+<tr class="row-even"><td><strong>URL</strong></td>
+<td><p class="first">/router/{<strong>switch</strong>}[/{<strong>vlan</strong>}]</p>
+<p>&#8211;<strong>switch</strong>: [ &#8220;all&#8221; |<em>スイッチID</em>]</p>
+<p class="last">&#8211;<strong>vlan</strong>: [ &#8220;all&#8221; |<em>VLAN ID</em>]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><strong>データ</strong></td>
+<td><strong>gateway</strong>:&#8221;&lt;xxx.xxx.xxx.xxx&gt;&#8221;</td>
+</tr>
+<tr class="row-even"><td><strong>備考</strong></td>
+<td>VLAN IDの指定はオプションです。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id19">
+<h3>アドレスの削除<a class="headerlink" href="#id19" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="24%" />
+<col width="76%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>メソッド</strong></td>
+<td>DELETE</td>
+</tr>
+<tr class="row-even"><td><strong>URL</strong></td>
+<td><p class="first">/router/{<strong>switch</strong>}[/{<strong>vlan</strong>}]</p>
+<p>&#8211;<strong>switch</strong>: [ &#8220;all&#8221; |<em>スイッチID</em>]</p>
+<p class="last">&#8211;<strong>vlan</strong>: [ &#8220;all&#8221; |<em>VLAN ID</em>]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><strong>データ</strong></td>
+<td><strong>address_id</strong>:[ 1 - ... ]</td>
+</tr>
+<tr class="row-even"><td><strong>備考</strong></td>
+<td>VLAN IDの指定はオプションです。</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="id20">
+<h3>ルートの削除<a class="headerlink" href="#id20" title="このヘッドラインへのパーマリンク">¶</a></h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="24%" />
+<col width="76%" />
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><strong>メソッド</strong></td>
+<td>DELETE</td>
+</tr>
+<tr class="row-even"><td><strong>URL</strong></td>
+<td><p class="first">/router/{<strong>switch</strong>}[/{<strong>vlan</strong>}]</p>
+<p>&#8211;<strong>switch</strong>: [ &#8220;all&#8221; |<em>スイッチID</em>]</p>
+<p class="last">&#8211;<strong>vlan</strong>: [ &#8220;all&#8221; |<em>VLAN ID</em>]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><strong>データ</strong></td>
+<td><strong>route_id</strong>:[ 1 - ... ]</td>
+</tr>
+<tr class="row-even"><td><strong>備考</strong></td>
+<td>VLAN IDの指定はオプションです。</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">目次</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">ルータ</a><ul>
+<li><a class="reference internal" href="#id2">シングルテナントでの動作例</a><ul>
+<li><a class="reference internal" href="#id3">環境構築</a></li>
+<li><a class="reference internal" href="#id4">アドレスの設定</a></li>
+<li><a class="reference internal" href="#id5">デフォルトルートの設定</a></li>
+<li><a class="reference internal" href="#id6">静的ルートの設定</a></li>
+<li><a class="reference internal" href="#id7">設定内容の確認</a></li>
+<li><a class="reference internal" href="#id8">静的ルートの削除</a></li>
+<li><a class="reference internal" href="#id9">アドレスの削除</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id10">マルチテナントでの動作例</a><ul>
+<li><a class="reference internal" href="#id11">環境構築</a></li>
+<li><a class="reference internal" href="#id12">アドレスの設定</a></li>
+<li><a class="reference internal" href="#id13">デフォルトルートと静的ルートの設定</a></li>
+<li><a class="reference internal" href="#id14">設定内容の確認</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#rest-api">REST API一覧</a><ul>
+<li><a class="reference internal" href="#id15">設定の取得</a></li>
+<li><a class="reference internal" href="#id16">アドレスの設定</a></li>
+<li><a class="reference internal" href="#id17">静的ルートの設定</a></li>
+<li><a class="reference internal" href="#id18">デフォルトルートの設定</a></li>
+<li><a class="reference internal" href="#id19">アドレスの削除</a></li>
+<li><a class="reference internal" href="#id20">ルートの削除</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>前のトピックへ</h4>
+  <p class="topless"><a href="rest_firewall.html"
+                        title="前の章へ">ファイアウォール</a></p>
+  <h4>次のトピックへ</h4>
+  <p class="topless"><a href="rest_qos.html"
+                        title="次の章へ">QoS</a></p>
+  <h3>このページ</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/rest_router.txt"
+           rel="nofollow">ソースコードを表示</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>クイック検索</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="検索" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    モジュール、クラス、または関数名を入力してください
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>ナビゲーション</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="総合索引"
+             >索引</a></li>
+        <li class="right" >
+          <a href="rest_qos.html" title="QoS"
+             >次へ</a> |</li>
+        <li class="right" >
+          <a href="rest_firewall.html" title="ファイアウォール"
+             >前へ</a> |</li>
+        <li><a href="index.html">Ryubook 1.0 ドキュメント</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2014, RYU project team.
+    </div>
+  </body>
+</html>
